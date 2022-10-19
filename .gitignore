@@ -1,0 +1,4 @@
+*.bsp
+*.sbt
+/project
+/target
