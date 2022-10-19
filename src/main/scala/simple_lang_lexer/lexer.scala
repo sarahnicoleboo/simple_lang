@@ -4,7 +4,9 @@ object lexer {
 	class tokenizer(val input: String)
 	
 	def tokenize(input: String) = {
-		tokenizer(input)
+		val newInput = input.filterNot(_.isWhitespace)
+		tokenizer(newInput)
 	}
+	
 	
 }
