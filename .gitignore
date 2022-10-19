@@ -1,4 +1,3 @@
 *.bsp
-*.sbt
 /project
 /target
