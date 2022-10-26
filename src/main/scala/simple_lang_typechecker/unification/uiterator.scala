@@ -1,4 +1,4 @@
-package typecheckers.unification
+package simple_lang_typechecker.unification
 
 object UIterator {
   def empty[S]: UIterator[S, Nothing] = {

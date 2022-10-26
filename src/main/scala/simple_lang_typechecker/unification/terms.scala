@@ -1,4 +1,4 @@
-package typecheckers.unification
+package simple_lang_typechecker.unification
 
 trait Term[T] {
   def asString: String

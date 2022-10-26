@@ -1,4 +1,4 @@
-package typecheckers.unification
+package simple_lang_typechecker.unification
 
 class UnificationEnvironment(private val mapping: Map[Long, Term[_]]) {
   def this() = this(Map())
