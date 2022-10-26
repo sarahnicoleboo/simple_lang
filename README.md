@@ -3,6 +3,7 @@ i is an integer literal </br >
 bool is a boolean value (true or false) </br >
 str is a string literal </br >
 
+```
 type ::= int | bool | string</br >
 primary_exp ::= x | i | bool | str </br >
 additive_op ::= + | - </br >
@@ -20,3 +21,4 @@ stmt ::= type x = exp; | </br >
 	 { stmt* } | </br >
 	 exp </br >
 program ::= stmt
+```
