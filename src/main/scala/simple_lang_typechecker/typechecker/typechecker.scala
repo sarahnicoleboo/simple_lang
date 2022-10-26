@@ -90,4 +90,8 @@ object Typechecker {
 			}
 		}
 	}
+	
+	def typecheckProgram(stmts: Seq[Stmt], env: Map[Variable, Type]) = {
+		for (stmt <- stmts) typecheckStmt(stmt, env)
+	}
 }
