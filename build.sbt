@@ -1,4 +1,4 @@
-name := "typecheckers"
+name := "simple_lang"
 
 scalaVersion := "2.12.6"
 
