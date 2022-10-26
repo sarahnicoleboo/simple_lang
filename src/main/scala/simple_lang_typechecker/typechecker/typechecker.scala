@@ -10,7 +10,7 @@ object Typechecker {
 				case BooleanLiteralExp(_) => BoolType
 				case StringLiteralExp(_) => StringType
 				case VariableExp(name) => {
-					env.getOrElse(name, throw new IllTypedException("variable" + name + "not in scope"))
+					env.getOrElse(name, throw new IllTypedException(s"variable $name not in scope"))
 				}
 			}
 			case b : BinopExp => b match {	//matched a binop expression
@@ -35,6 +35,59 @@ object Typechecker {
 				}
 			}
 			case _ => throw new IllTypedException("reached end of typeOfExp without matching")
+		}
+	}
+	
+	def typecheckStmt(stmt: Stmt, env: Map[Variable, Type]): Map[Variable, Type] = {
+		stmt match {
+			case VariableDeclarationStmt(variableType, variable, exp) => {
+				val expType = typeOfExp(exp, env)
+				if (!env.contains(variable)) {
+					if (variableType == expType) {
+						env + (variable -> variableType)
+					} else {
+					throw new IllTypedException(s"expected $variableType; received $expType")
+					}
+				} else {
+				throw new IllTypedException("Variable already declared in this scope")
+				}
+			}
+			case VariableAssignmentStmt(variable, exp) => {
+				if (!env.contains(variable)) {
+					throw new IllTypedException("Variable not in scope")
+				}
+				env
+			}
+			case IfStmt(guard, ifTrue, ifFalse) => {
+				if (typeOfExp(guard, env) == BoolType) {
+					typecheckStmt(ifTrue, env)
+					typecheckStmt(ifFalse, env)
+					env
+				} else {
+					throw new IllTypedException("Guard should be of type boolean")
+				}
+			}
+			case WhileStmt(guard, body) => {
+				if (typeOfExp(guard, env) == BoolType) {
+					typecheckStmt(body, env)
+					env
+				} else {
+					throw new IllTypedException("Guard should be of type boolean")
+				}
+			}
+			case PrintStmt(exps) => {
+				for (exp <- exps) typeOfExp(exp, env)
+				env
+			}
+			case BlockStmt(stmts) => {
+				stmts.foldLeft(env)((currentEnv, currentStmt) => 
+					typecheckStmt(currentStmt, currentEnv))
+				env
+			}
+			case ExpStmt(exp) => {
+				typeOfExp(exp, env)
+				env
+			}
 		}
 	}
 }
