@@ -1,9 +1,7 @@
-simple expression language we're using:
-
-x is a variable literal
-i is an integer literal
-bool is a boolean value (true or false)
-str is a string literal
+x is a variable literal </br >
+i is an integer literal </br >
+bool is a boolean value (true or false) </br >
+str is a string literal </br >
 
 type ::= int | bool | string</br >
 primary_exp ::= x | i | bool | str </br >
