@@ -5,6 +5,10 @@ class TypecheckerTest extends FlatSpec {
 	val emptyEnv = Map[Variable, Type]()
 	
 	"typeOfExp" should "handle an integer literal" in {
-		assertResult(IntType) { typeOfExp(IntegerLiteralExp(10), emptyEnv) } 
+		assertResult(IntType) { Typechecker.typeOfExp(IntegerLiteralExp(10), emptyEnv) } 
+	}
+	
+	"typeOfExp" should "handle a boolean literal" in {
+		assertResult(BoolType) { Typechecker.typeOfExp(BooleanLiteralExp(true), emptyEnv) }
 	}
 }
