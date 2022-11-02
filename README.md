@@ -12,7 +12,9 @@ comparison_op ::= < | > </br >
 comparison_exp ::= additive_exp (comparison_op additive_exp)* </br >
 equals_op ::= == | !=
 equals_exp ::= comparison_exp (equals_op comparison_exp)* </br >
-exp ::= equals_exp </br >
+unary_op ::= ! | - </br >
+unary_exp ::= unary_op equals_exp | equals_exp </br >
+exp ::= unary_exp </br >
 stmt ::= type x = exp; | </br >
 	 x = exp; | </br >
 	 if (exp) stmt else stmt | </br >
