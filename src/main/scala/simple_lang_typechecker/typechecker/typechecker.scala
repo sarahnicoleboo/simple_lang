@@ -141,4 +141,35 @@ object Generator {
 			_ <- unify(resultType, expectedResult)
 		} yield op
 	}
+	
+	type GenTypeEnv = Map[Variable, Term[UnificationType]]
+	
+	//change Unit here later
+	def genExp(env: GenTypeEnv, ofType: Term[UnificationType]): UIterator[Unit, Exp] = {
+		disjuncts(
+			for {	//integer literal
+				_ <- unify(ofType, intUnificationType)
+			} yield IntegerLiteralExp(0),	//how do i make this not just 0?
+			for {	//boolean literal
+				_ <- unify(ofType, boolUnificationType)
+			} yield BooleanLiteralExp(true), 	//how do i make this not just true?
+			for {	//string literal
+				_ <- unify(ofType, stringUnificationType)
+			} yield StringLiteralExp("hi"),		//how do i make this not just "hi"?
+			for {	//variable
+				(variable, variableType) <- toUIterator(env.iterator)
+				_ <- unify(ofType, variableType)
+			} yield VariableExp(variable),
+			{	//BinopExps
+				val leftType = NewVariable[UnificationType]
+				val rightType = NewVariable[UnificationType]
+				for {
+					op <- binopHelper(leftType, rightType,  ofType)
+					left <- genExp(env, leftType)
+					right <- genExp(env, rightType)
+				} yield {???}	//am confuse
+			}
+			//still need to do unary exps too
+		)
+	}
 }

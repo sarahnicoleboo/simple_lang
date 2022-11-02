@@ -8,7 +8,6 @@ case object StringType extends Type
 
 //operators
 sealed trait BinOp
-
 sealed trait AdditiveOp extends BinOp
 case object PlusOp extends AdditiveOp
 case object MinusOp extends AdditiveOp
@@ -39,6 +38,7 @@ case class BooleanLiteralExp(value: Boolean) extends PrimaryExp
 case class StringLiteralExp(value: String) extends PrimaryExp
 
 sealed trait BinopExp extends Exp
+//case class BinopExp(left: Exp, op: BinOp, right: Exp) extends Exp
 case class AdditiveExp(left: PrimaryExp, op: AdditiveOp, right: PrimaryExp) extends BinopExp
 case class ComparisonExp(left: AdditiveExp, op: ComparisonOp, right: AdditiveExp) extends BinopExp
 case class EqualsExp(left: ComparisonExp, op: EqualsOp, right: ComparisonExp) extends BinopExp
