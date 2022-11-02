@@ -33,6 +33,16 @@ object Typechecker {
 					}
 				}
 			}
+			case u : UnaryExp => u match {
+				case NotExp(op, exp) => (op, typeOfExp(exp, env)) match {
+					case (NotOp, BoolType) => BoolType
+					case _ => throw new IllTypedException("operand n/a to logical not")
+				}
+				case NegateExp(op, exp) => (op, typeOfExp(exp, env)) match {
+					case (NegateOp, IntType) => IntType
+					case _ => throw new IllTypedException("operand n/a to integer negation")
+				}
+			}
 			case _ => throw new IllTypedException("reached end of typeOfExp without matching")
 		}
 	}
@@ -107,7 +117,7 @@ object Generator {
 	//helpers for generating expressions with binary operators:
 	//each tuple: Op, leftType, rightType, resultType
 	//WHY NOT JUST MAKE THIS AN ITERATOR?
-	val binops: Seq[(Op, Term[UnificationType], Term[UnificationType], Term[UnificationType])] =
+	val binops: Seq[(BinOp, Term[UnificationType], Term[UnificationType], Term[UnificationType])] =
 		Seq (
 			(PlusOp, intUnificationType, intUnificationType, intUnificationType),
 			(PlusOp, stringUnificationType, stringUnificationType, stringUnificationType),
@@ -123,7 +133,7 @@ object Generator {
 		)
 		
 		//change Unit here later
-	def binopHelper(leftType: Term[UnificationType], rightType: Term[UnificationType], resultType: Term[UnificationType]): UIterator[Unit, Op] = {
+	def binopHelper(leftType: Term[UnificationType], rightType: Term[UnificationType], resultType: Term[UnificationType]): UIterator[Unit, BinOp] = {
 		for {
 			(op, expectedLeft, expectedRight, expectedResult) <- toUIterator(binops.iterator)
 			_ <- unify(leftType, expectedLeft)

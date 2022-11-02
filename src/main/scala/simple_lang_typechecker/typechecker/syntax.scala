@@ -7,18 +7,24 @@ case object BoolType extends Type
 case object StringType extends Type
 
 //operators
-sealed trait Op
-sealed trait AdditiveOp extends Op
+sealed trait BinOp
+
+sealed trait AdditiveOp extends BinOp
 case object PlusOp extends AdditiveOp
 case object MinusOp extends AdditiveOp
 
-sealed trait ComparisonOp extends Op
+sealed trait ComparisonOp extends BinOp
 case object LessThanOp extends ComparisonOp
 case object GreaterThanOp extends ComparisonOp
 
-sealed trait EqualsOp extends Op
+sealed trait EqualsOp extends BinOp
 case object ExactlyEqualsOp extends EqualsOp
 case object NotEqualsOp extends EqualsOp
+
+
+sealed trait UnaryOp
+case object NotOp extends UnaryOp
+case object NegateOp extends UnaryOp
 //end of operators
 
 case class Variable(name: String)
@@ -36,6 +42,10 @@ sealed trait BinopExp extends Exp
 case class AdditiveExp(left: PrimaryExp, op: AdditiveOp, right: PrimaryExp) extends BinopExp
 case class ComparisonExp(left: AdditiveExp, op: ComparisonOp, right: AdditiveExp) extends BinopExp
 case class EqualsExp(left: ComparisonExp, op: EqualsOp, right: ComparisonExp) extends BinopExp
+
+sealed trait UnaryExp extends Exp	//I feel like this makes no sense but whatever for now
+case class NotExp(op: UnaryOp, exp: Exp) extends UnaryExp
+case class NegateExp(op: UnaryOp, exp: Exp) extends UnaryExp
 //end of exps
 
 //stmts
