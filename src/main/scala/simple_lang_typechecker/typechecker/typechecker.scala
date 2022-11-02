@@ -21,11 +21,10 @@ object Typechecker {
 					case _ => throw new IllTypedException("incompatible operands for an additive exp")
 				}
 				case ComparisonExp(left, op, right) => (op, typeOfExp(left, env), typeOfExp(right, env)) match {
-					case (LessThanOp, IntType, IntType) => BoolType
-					case (GreaterThanOp, IntType, IntType) => BoolType
+					case (_, IntType, IntType) => BoolType
 					case _ => throw new IllTypedException("incompatible operands for a comparison exp")
 				}
-				case EqualsExp(left, op, right) => {
+				case EqualsExp(left, op, right) => {	//doesn't matter what types they are as long as they're the same on both sides
 					val leftType = typeOfExp(left, env)
 					val rightType = typeOfExp(right, env)
 					(op, leftType, rightType) match {
@@ -93,5 +92,43 @@ object Typechecker {
 	
 	def typecheckProgram(stmts: Seq[Stmt], env: Map[Variable, Type]) = {
 		for (stmt <- stmts) typecheckStmt(stmt, env)
+	}
+} // end of Typechecker
+
+object Generator {
+	import simple_lang_typechecker.unification._
+	import simple_lang_typechecker.unification.UIterator._
+	
+	trait UnificationType {}
+	val intUnificationType = VariantOf[UnificationType]("intType")
+	val boolUnificationType = VariantOf[UnificationType]("boolType")
+	val stringUnificationType = VariantOf[UnificationType]("stringType")
+	
+	//helpers for generating expressions with binary operators:
+	//each tuple: Op, leftType, rightType, resultType
+	//WHY NOT JUST MAKE THIS AN ITERATOR?
+	val binops: Seq[(Op, Term[UnificationType], Term[UnificationType], Term[UnificationType])] =
+		Seq (
+			(PlusOp, intUnificationType, intUnificationType, intUnificationType),
+			(PlusOp, stringUnificationType, stringUnificationType, stringUnificationType),
+			(MinusOp, intUnificationType, intUnificationType, intUnificationType),
+			(LessThanOp, intUnificationType, intUnificationType, boolUnificationType),
+			(GreaterThanOp, intUnificationType, intUnificationType, intUnificationType),
+			(ExactlyEqualsOp, intUnificationType, intUnificationType, boolUnificationType),
+			(ExactlyEqualsOp, boolUnificationType, boolUnificationType, boolUnificationType),
+			(ExactlyEqualsOp, stringUnificationType, stringUnificationType, boolUnificationType),
+			(NotEqualsOp, intUnificationType, intUnificationType, boolUnificationType),
+			(NotEqualsOp, boolUnificationType, boolUnificationType, boolUnificationType),
+			(NotEqualsOp, stringUnificationType, stringUnificationType, boolUnificationType)
+		)
+		
+		//change Unit here later
+	def binopHelper(leftType: Term[UnificationType], rightType: Term[UnificationType], resultType: Term[UnificationType]): UIterator[Unit, Op] = {
+		for {
+			(op, expectedLeft, expectedRight, expectedResult) <- toUIterator(binops.iterator)
+			_ <- unify(leftType, expectedLeft)
+			_ <- unify(rightType, expectedRight)
+			_ <- unify(resultType, expectedResult)
+		} yield op
 	}
 }
