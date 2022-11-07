@@ -8,18 +8,12 @@ case object StringType extends Type
 
 //operators
 sealed trait BinOp
-sealed trait AdditiveOp extends BinOp
-case object PlusOp extends AdditiveOp
-case object MinusOp extends AdditiveOp
-
-sealed trait ComparisonOp extends BinOp
-case object LessThanOp extends ComparisonOp
-case object GreaterThanOp extends ComparisonOp
-
-sealed trait EqualsOp extends BinOp
-case object ExactlyEqualsOp extends EqualsOp
-case object NotEqualsOp extends EqualsOp
-
+case object PlusOp extends BinOp
+case object MinusOp extends BinOp
+case object LessThanOp extends BinOp
+case object GreaterThanOp extends BinOp
+case object ExactlyEqualsOp extends BinOp
+case object NotEqualsOp extends BinOp
 
 sealed trait UnaryOp
 case object NotOp extends UnaryOp
@@ -31,21 +25,14 @@ case class Variable(name: String)
 //expressions
 sealed trait Exp
 //primary exps
-sealed trait PrimaryExp extends Exp
-case class VariableExp(name: Variable) extends PrimaryExp
-case class IntegerLiteralExp(value: Int) extends PrimaryExp
-case class BooleanLiteralExp(value: Boolean) extends PrimaryExp
-case class StringLiteralExp(value: String) extends PrimaryExp
-
-sealed trait BinopExp extends Exp
-//case class BinopExp(left: Exp, op: BinOp, right: Exp) extends Exp
-case class AdditiveExp(left: PrimaryExp, op: AdditiveOp, right: PrimaryExp) extends BinopExp
-case class ComparisonExp(left: AdditiveExp, op: ComparisonOp, right: AdditiveExp) extends BinopExp
-case class EqualsExp(left: ComparisonExp, op: EqualsOp, right: ComparisonExp) extends BinopExp
-
-sealed trait UnaryExp extends Exp	//I feel like this makes no sense but whatever for now
-case class NotExp(op: UnaryOp, exp: Exp) extends UnaryExp
-case class NegateExp(op: UnaryOp, exp: Exp) extends UnaryExp
+case class VariableExp(name: Variable) extends Exp
+case class IntegerLiteralExp(value: Int) extends Exp
+case class BooleanLiteralExp(value: Boolean) extends Exp
+case class StringLiteralExp(value: String) extends Exp
+//binary exps
+case class BinopExp(left: Exp, op: BinOp, right: Exp) extends Exp
+//unary exps
+case class UnaryExp(op: UnaryOp, exp: Exp) extends Exp
 //end of exps
 
 //stmts

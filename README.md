@@ -3,6 +3,26 @@ i is an integer literal </br >
 bool is a boolean value (true or false) </br >
 str is a string literal </br >
 
+Abstract Syntax:
+
+```
+type ::= int | bool | string</br >
+unop ::= ! | - </br >
+binop ::=  + | - | < | > | == | != </br >
+exp ::= x | i | bool | str | unop exp | exp binop exp </br >
+stmt ::= type x = exp; | </br >
+	 x = exp; | </br >
+	 if (exp) stmt else stmt | </br >
+	 while (exp) stmt | </br >
+	 print(exp*) | </br >
+	 { stmt* } | </br >
+	 exp </br >
+program ::= stmt
+
+```
+
+Below is the more concrete-ish syntax pulled from my 430 lang with some changes
+
 ```
 type ::= int | bool | string</br >
 primary_exp ::= x | i | bool | str </br >
