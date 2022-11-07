@@ -92,7 +92,7 @@ object Typechecker {
 	def typecheckProgram(stmts: Seq[Stmt], env: Map[Variable, Type]) = {
 		for (stmt <- stmts) typecheckStmt(stmt, env)
 	}
-} // end of Typechecker
+} //end of Typechecker
 
 object Generator {
 	import simple_lang_typechecker.unification._
@@ -102,6 +102,23 @@ object Generator {
 	val intUnificationType = VariantOf[UnificationType]("intType")
 	val boolUnificationType = VariantOf[UnificationType]("boolType")
 	val stringUnificationType = VariantOf[UnificationType]("stringType")
+	
+	//helper for generating expressions with unary operators
+	//each tuple: Op, expType, resultType
+	val unops: Seq[(UnaryOp, Term[UnificationType], Term[UnificationType])] =
+		Seq (
+			(NotOp, boolUnificationType, boolUnificationType),
+			(NegateOp, intUnificationType, intUnificationType)
+		)
+	
+	//change Unit here later 
+	def unopHelper(expType: Term[UnificationType], resultType: Term[UnificationType]): UIterator[Unit, UnaryOp] = {
+		for {
+			(op, expectedExpType, expectedResult) <- toUIterator(unops.iterator)
+			_ <- unify(expType, expectedExpType)
+			_ <- unify(resultType, expectedResult)
+		} yield op
+	}
 	
 	//helpers for generating expressions with binary operators:
 	//each tuple: Op, leftType, rightType, resultType
@@ -121,7 +138,7 @@ object Generator {
 			(NotEqualsOp, stringUnificationType, stringUnificationType, boolUnificationType)
 		)
 		
-		//change Unit here later
+	//change Unit here later
 	def binopHelper(leftType: Term[UnificationType], rightType: Term[UnificationType], resultType: Term[UnificationType]): UIterator[Unit, BinOp] = {
 		for {
 			(op, expectedLeft, expectedRight, expectedResult) <- toUIterator(binops.iterator)
@@ -149,6 +166,13 @@ object Generator {
 				(variable, variableType) <- toUIterator(env.iterator)
 				_ <- unify(ofType, variableType)
 			} yield VariableExp(variable),
+			{	//UnaryExps
+				val expType = NewVariable[UnificationType]
+				for {
+					op <- unopHelper(expType, ofType)
+					theExp <- genExp(env, expType)
+				} yield UnaryExp(op, theExp)
+			},
 			{	//BinopExps
 				val leftType = NewVariable[UnificationType]
 				val rightType = NewVariable[UnificationType]
@@ -156,9 +180,8 @@ object Generator {
 					op <- binopHelper(leftType, rightType,  ofType)
 					left <- genExp(env, leftType)
 					right <- genExp(env, rightType)
-				} yield {???}	//am confuse
+				} yield BinopExp(left, op, right)
 			}
-			//still need to do unary exps too
-		)
-	}
-}
+		)	//end of disjuncts
+	} //end of genExp
+} //end of Generator
