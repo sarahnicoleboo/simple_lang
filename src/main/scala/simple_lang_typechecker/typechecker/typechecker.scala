@@ -194,6 +194,19 @@ object Generator {
 		}
 	}
 	
+	//helper for generating print stmt
+	def genNumExpsInPrint(amount: Int, env: GenTypeEnv): UIterator[Int, List[Exp]] = {
+		if (amount == 0) {
+			singleton(List())
+		} else {
+			val expType = NewVariable[UnificationType]
+			for {
+				exp <- genExp(env, expType)
+				exps <- genNumExpsInPrint(amount - 1, env)
+			} yield (exp :: exps)
+		}
+	}
+	
 	def genStmt(env: GenTypeEnv): UIterator[Int, (Stmt, GenTypeEnv)] = {
 		disjuncts(
 			{	//Variable Declaration: type x = exp;
@@ -224,9 +237,10 @@ object Generator {
 				guard <- genExp(env, boolUnificationType)
 				(body, _) <- genStmt(env)
 			} yield (WhileStmt(guard, body), env),
-			{	//print(exp*)
-				???
-			},
+			for {	//print(exp*)
+				numExps <- toUIterator(0.to(5).iterator)
+				exps <- genNumExpsInPrint(numExps, env)
+			} yield (PrintStmt(exps.toSeq), env),
 			for {	//Block statement: { stmt* }
 				numStmts <- toUIterator(0.to(5).iterator)
 				(stmts, _) <- genNumStmtsInBlock(numStmts, env)
