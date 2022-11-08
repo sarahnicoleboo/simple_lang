@@ -1,5 +1,8 @@
 package simple_lang_typechecker.typechecker
 
+import simple_lang_typechecker.unification._
+import simple_lang_typechecker.unification.UIterator._
+
 //types
 sealed trait Type
 case object IntType extends Type
@@ -43,7 +46,18 @@ case class IfStmt(guard: Exp, ifTrue: Stmt, ifFalse: Stmt) extends Stmt
 case class WhileStmt(guard: Exp, body: Stmt) extends Stmt
 case class PrintStmt(exps: Seq[Exp]) extends Stmt
 case class BlockStmt(smts: Seq[Stmt]) extends Stmt
-case class ExpStmt(exp: Exp) extends Stmt
+
+//generation stuff
+trait UnificationType {}
+
+//shadow AST
+sealed trait GenStmt
+case class VariableDeclarationGenStmt(theType: Term[UnificationType], name: Variable, exp: Exp) extends GenStmt
+case class VariableAssignmentGenStmt(name: Variable, exp: Exp) extends GenStmt
+case class IfGenStmt(guard: Exp, ifTrue: GenStmt, ifFalse: GenStmt) extends GenStmt
+case class WhileGenStmt(guard: Exp, body: GenStmt) extends GenStmt
+case class PrintGenStmt(exps: Seq[Exp]) extends GenStmt
+case class BlockGenStmt(smts: Seq[GenStmt]) extends GenStmt
 
 case class Program(stmt: Stmt)
 

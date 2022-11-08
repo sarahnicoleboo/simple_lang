@@ -82,10 +82,6 @@ object Typechecker {
 					typecheckStmt(currentStmt, currentEnv))
 				env
 			}
-			case ExpStmt(exp) => {
-				typeOfExp(exp, env)
-				env
-			}
 		}
 	}
 	
@@ -98,7 +94,7 @@ object Generator {
 	import simple_lang_typechecker.unification._
 	import simple_lang_typechecker.unification.UIterator._
 	
-	trait UnificationType {}
+	//trait UnificationType {}	//moved to syntax.scala
 	val intUnificationType = VariantOf[UnificationType]("intType")
 	val boolUnificationType = VariantOf[UnificationType]("boolType")
 	val stringUnificationType = VariantOf[UnificationType]("stringType")
@@ -183,7 +179,7 @@ object Generator {
 	} //end of genExp
 	
 	//helper for generating block statement
-	def genNumStmtsInBlock(amount: Int, env: GenTypeEnv): UIterator[Int, (List[Stmt], GenTypeEnv)] = {
+	def genNumStmtsInBlock(amount: Int, env: GenTypeEnv): UIterator[Int, (List[GenStmt], GenTypeEnv)] = {
 		if (amount == 0) {
 			singleton((List(), env))
 		} else {
@@ -207,7 +203,7 @@ object Generator {
 		}
 	}
 	
-	def genStmt(env: GenTypeEnv): UIterator[Int, (Stmt, GenTypeEnv)] = {
+	def genStmt(env: GenTypeEnv): UIterator[Int, (GenStmt, GenTypeEnv)] = {
 		disjuncts(
 			{	//Variable Declaration: type x = exp;
 				val expType = NewVariable[UnificationType]
@@ -219,33 +215,34 @@ object Generator {
 					val newVariable = Variable("x" + id)
 					//??? below is because of the whole not a Type but a Term[UnificationType] thing
 					//to be fixed later
-					(VariableDeclarationStmt(???, newVariable, exp), env + (newVariable -> expType))
+					//(VariableDeclarationStmt(???, newVariable, exp), env + (newVariable -> expType))
+					(VariableDeclarationGenStmt(expType, newVariable, exp), env + (newVariable -> expType))
 				}
 			},
 			//Variable Assignment
 			for {
 				(variable, variableType) <- toUIterator(env.iterator)
 				exp <- genExp(env, variableType)
-			} yield (VariableAssignmentStmt(variable, exp), env),
+			} yield (VariableAssignmentGenStmt(variable, exp), env),
 			//If statement: if (exp) stmt else stmt
 			for {
 				guard <- genExp(env, boolUnificationType)
 				(ifTrue, _) <- genStmt(env)
 				(ifFalse, _) <- genStmt(env)
-			} yield (IfStmt(guard, ifTrue, ifFalse), env),
+			} yield (IfGenStmt(guard, ifTrue, ifFalse), env),
 			//While statement: while (exp) stmt
 			for {
 				guard <- genExp(env, boolUnificationType)
 				(body, _) <- genStmt(env)
-			} yield (WhileStmt(guard, body), env),
+			} yield (WhileGenStmt(guard, body), env),
 			for {	//print(exp*)
 				numExps <- toUIterator(0.to(5).iterator)
 				exps <- genNumExpsInPrint(numExps, env)
-			} yield (PrintStmt(exps.toSeq), env),
+			} yield (PrintGenStmt(exps.toSeq), env),
 			for {	//Block statement: { stmt* }
 				numStmts <- toUIterator(0.to(5).iterator)
 				(stmts, _) <- genNumStmtsInBlock(numStmts, env)
-			} yield (BlockStmt(stmts.toSeq), env)
+			} yield (BlockGenStmt(stmts.toSeq), env)
 		) //end of disjuncts
 	}
 } //end of Generator
