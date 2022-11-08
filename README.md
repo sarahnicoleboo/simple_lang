@@ -9,7 +9,7 @@ Abstract Syntax:
 type ::= int | bool | string</br >
 unop ::= ! | - </br >
 binop ::=  + | - | < | > | == | != </br >
-exp ::= x | i | bool | str | unop exp | exp binop exp | x(x*) </br >
+exp ::= x | i | bool | str | unop exp | exp binop exp | x(exp*) </br >
 stmt ::= type x = exp; | </br >
 	 x = exp; | </br >
 	 if (exp) stmt else stmt | </br >
