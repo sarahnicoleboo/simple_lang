@@ -110,9 +110,8 @@ object Generator {
 			(NotOp, boolUnificationType, boolUnificationType),
 			(NegateOp, intUnificationType, intUnificationType)
 		)
-	
-	//change Unit here later 
-	def unopHelper(expType: Term[UnificationType], resultType: Term[UnificationType]): UIterator[Unit, UnaryOp] = {
+	 
+	def unopHelper(expType: Term[UnificationType], resultType: Term[UnificationType]): UIterator[Int, UnaryOp] = {
 		for {
 			(op, expectedExpType, expectedResult) <- toUIterator(unops.iterator)
 			_ <- unify(expType, expectedExpType)
@@ -138,8 +137,7 @@ object Generator {
 			(NotEqualsOp, stringUnificationType, stringUnificationType, boolUnificationType)
 		)
 		
-	//change Unit here later
-	def binopHelper(leftType: Term[UnificationType], rightType: Term[UnificationType], resultType: Term[UnificationType]): UIterator[Unit, BinOp] = {
+	def binopHelper(leftType: Term[UnificationType], rightType: Term[UnificationType], resultType: Term[UnificationType]): UIterator[Int, BinOp] = {
 		for {
 			(op, expectedLeft, expectedRight, expectedResult) <- toUIterator(binops.iterator)
 			_ <- unify(leftType, expectedLeft)
@@ -148,10 +146,9 @@ object Generator {
 		} yield op
 	}
 	
-	type GenTypeEnv = Map[Variable, Term[UnificationType]]
+	type GenTypeEnv = Map[Variable, Term[UnificationType]]	//alias so i don't have to keep typing this
 	
-	//change Unit here later
-	def genExp(env: GenTypeEnv, ofType: Term[UnificationType]): UIterator[Unit, Exp] = {
+	def genExp(env: GenTypeEnv, ofType: Term[UnificationType]): UIterator[Int, Exp] = {
 		disjuncts(
 			for {	//integer literal
 				_ <- unify(ofType, intUnificationType)
@@ -184,4 +181,43 @@ object Generator {
 			}
 		)	//end of disjuncts
 	} //end of genExp
+	
+	def genStmt(env: GenTypeEnv): UIterator[Int, (Stmt, GenTypeEnv)] = {
+		disjuncts(
+			{	//Variable Declaration: type x = exp;
+				val expType = NewVariable[UnificationType]
+				for {
+					exp <- genExp(env, expType)
+					id <- getState
+					_ <- putState(id + 1)
+				} yield {
+					val newVariable = Variable("x" + id)
+					//??? below is because of the whole not a Type but a Term[UnificationType] thing
+					//to be fixed later
+					(VariableDeclarationStmt(???, newVariable, exp), env + (newVariable -> expType))
+				}
+			},
+			{	//Variable Assignment
+				//need to get a variable already in scope, then assign it an exp that matches it's type
+				???
+			},
+			//If statement: if (exp) stmt else stmt
+			for {
+				guard <- genExp(env, boolUnificationType)
+				(ifTrue, _) <- genStmt(env)
+				(ifFalse, _) <- genStmt(env)
+			} yield (IfStmt(guard, ifTrue, ifFalse), env),
+			//While statement: while (exp) stmt
+			for {
+				guard <- genExp(env, boolUnificationType)
+				(body, _) <- genStmt(env)
+			} yield (WhileStmt(guard, body), env),
+			{	//print(exp*)
+				???
+			},
+			{	//Block statement: { stmt* }
+				???
+			}
+		) //end of disjuncts
+	}
 } //end of Generator
