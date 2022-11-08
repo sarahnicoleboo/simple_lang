@@ -222,10 +222,11 @@ object Generator {
 					(VariableDeclarationStmt(???, newVariable, exp), env + (newVariable -> expType))
 				}
 			},
-			{	//Variable Assignment
-				//need to get a variable already in scope, then assign it an exp that matches it's type
-				???
-			},
+			//Variable Assignment
+			for {
+				(variable, variableType) <- toUIterator(env.iterator)
+				exp <- genExp(env, variableType)
+			} yield (VariableAssignmentStmt(variable, exp), env),
 			//If statement: if (exp) stmt else stmt
 			for {
 				guard <- genExp(env, boolUnificationType)
