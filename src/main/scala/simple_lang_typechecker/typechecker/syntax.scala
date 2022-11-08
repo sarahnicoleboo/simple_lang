@@ -36,6 +36,8 @@ case class StringLiteralExp(value: String) extends Exp
 case class BinopExp(left: Exp, op: BinOp, right: Exp) extends Exp
 //unary exps
 case class UnaryExp(op: UnaryOp, exp: Exp) extends Exp
+//for generation only: 
+case class FunctionCall(name:Variable, params: Seq[Exp]) extends Exp
 //end of exps
 
 //stmts
@@ -46,6 +48,8 @@ case class IfStmt(guard: Exp, ifTrue: Stmt, ifFalse: Stmt) extends Stmt
 case class WhileStmt(guard: Exp, body: Stmt) extends Stmt
 case class PrintStmt(exps: Seq[Exp]) extends Stmt
 case class BlockStmt(smts: Seq[Stmt]) extends Stmt
+
+case class Program(stmt: Stmt)
 
 //generation stuff
 trait UnificationType {}
@@ -59,8 +63,8 @@ case class WhileGenStmt(guard: Exp, body: GenStmt) extends GenStmt
 case class PrintGenStmt(exps: Seq[Exp]) extends GenStmt
 case class BlockGenStmt(smts: Seq[GenStmt]) extends GenStmt
 
-case class Program(stmt: Stmt)
-
+//functions (just used for function call generation rn)
+case class FunctionDef(theType: Term[UnificationType], name: Variable, params: Seq[(Term[UnificationType], Variable)])
 
 
 

@@ -142,6 +142,29 @@ object Generator {
 		} yield op
 	}
 	
+	//pre-defined functions
+	//each tuple is: (returnType, name, listOfParams)
+	val functions: Seq[FunctionDef] =
+		Seq(
+			FunctionDef(intUnificationType, Variable("sum"), Seq((intUnificationType, Variable("x")), (intUnificationType, Variable("y")))),
+			FunctionDef(boolUnificationType, Variable("isTrue"), Seq((boolUnificationType, Variable("a")))),
+			FunctionDef(stringUnificationType, Variable("concat"), Seq((stringUnificationType, Variable("a")), (stringUnificationType, Variable("b"))))
+		)
+	
+	//helper for generating function calls
+	def functionParamHelper(params: Seq[(Term[UnificationType], Variable)], env: GenTypeEnv): UIterator[Int, Seq[Exp]] = {
+		val paramTypes = params.map(_._1)
+		val exps = List[Exp]()
+		if (params.length == 0) {
+			singleton(exps)
+		} else {
+			for (p <- paramTypes) {
+				genExp(env, p) :: exps
+			}
+			singleton(exps.reverse)
+		}
+	}
+	
 	type GenTypeEnv = Map[Variable, Term[UnificationType]]	//alias so i don't have to keep typing this
 	
 	def genExp(env: GenTypeEnv, ofType: Term[UnificationType]): UIterator[Int, Exp] = {
@@ -174,7 +197,12 @@ object Generator {
 					left <- genExp(env, leftType)
 					right <- genExp(env, rightType)
 				} yield BinopExp(left, op, right)
-			}
+			},
+			for {
+				FunctionDef(returnType, name, params) <- toUIterator(functions.iterator)
+				_ <- unify(returnType, ofType)	
+				exps <- functionParamHelper(params, env)
+			} yield FunctionCall(name, exps)
 		)	//end of disjuncts
 	} //end of genExp
 	
