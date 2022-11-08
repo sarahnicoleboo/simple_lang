@@ -182,6 +182,18 @@ object Generator {
 		)	//end of disjuncts
 	} //end of genExp
 	
+	//helper for generating block statement
+	def genNumStmtsInBlock(amount: Int, env: GenTypeEnv): UIterator[Int, (List[Stmt], GenTypeEnv)] = {
+		if (amount == 0) {
+			singleton((List(), env))
+		} else {
+			for {
+				(stmt, newEnv) <- genStmt(env)
+				(stmts, finalEnv) <- genNumStmtsInBlock(amount - 1, newEnv)
+			} yield (stmt :: stmts, finalEnv)
+		}
+	}
+	
 	def genStmt(env: GenTypeEnv): UIterator[Int, (Stmt, GenTypeEnv)] = {
 		disjuncts(
 			{	//Variable Declaration: type x = exp;
@@ -215,9 +227,10 @@ object Generator {
 			{	//print(exp*)
 				???
 			},
-			{	//Block statement: { stmt* }
-				???
-			}
+			for {	//Block statement: { stmt* }
+				numStmts <- toUIterator(0.to(5).iterator)
+				(stmts, _) <- genNumStmtsInBlock(numStmts, env)
+			} yield (BlockStmt(stmts.toSeq), env)
 		) //end of disjuncts
 	}
 } //end of Generator
