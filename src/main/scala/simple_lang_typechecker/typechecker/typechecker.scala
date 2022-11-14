@@ -152,24 +152,18 @@ object Generator {
 		)
 	
 	//helper for generating function calls
-/* 	def functionParamHelper(params: Seq[(Term[UnificationType], Variable)], env: GenTypeEnv): UIterator[Int, Seq[Exp]] = {
-		val paramTypes = params.map(_._1)
-		val exps = List[Exp]()
-		if (params.length == 0) {
-			singleton(exps)
-		} else {
-			for (p <- paramTypes) {
-				genExp(env, p) :: exps
+ 	def functionParamHelper(paramTypes: List[Term[UnificationType]], env: GenTypeEnv): UIterator[Int, List[Exp]] = {
+		paramTypes match {
+			case Nil => singleton(List())
+			case head :: tail => {
+				for {
+					exp <- genExp(env, head)
+					rest <- functionParamHelper(tail, env)
+				} yield exp :: rest
 			}
-			singleton(exps.reverse)
 		}
-	} */
+	}
 	
-	
-	//notes
-	/* 
-	use .isEmpty instead of .length in functional programming because it's O(1) instead of O(n)
-	*/
 	
 	type GenTypeEnv = Map[Variable, Term[UnificationType]]	//alias so i don't have to keep typing this
 	
@@ -203,12 +197,12 @@ object Generator {
 					left <- genExp(env, leftType)
 					right <- genExp(env, rightType)
 				} yield BinopExp(left, op, right)
-			}/* ,
+			} ,
 			for {
 				FunctionDef(returnType, name, params) <- toUIterator(functions.iterator)
 				_ <- unify(returnType, ofType)	
-				exps <- functionParamHelper(params, env)
-			} yield FunctionCall(name, exps) */
+				exps <- functionParamHelper(params.map(_._1).toList, env)
+			} yield FunctionCall(name, exps)
 		)	//end of disjuncts
 	} //end of genExp
 	
