@@ -152,13 +152,13 @@ object Generator {
 		)
 	
 	//helper for generating function calls
- 	def functionParamHelper(paramTypes: List[Term[UnificationType]], env: GenTypeEnv): UIterator[Int, List[Exp]] = {
+ 	def functionParamHelper(paramTypes: List[Term[UnificationType]], env: GenTypeEnv, bound: Int): UIterator[Int, List[Exp]] = {
 		paramTypes match {
 			case Nil => singleton(List())
 			case head :: tail => {
 				for {
-					exp <- genExp(env, head)
-					rest <- functionParamHelper(tail, env)
+					exp <- genExp(env, head, bound - 1)
+					rest <- functionParamHelper(tail, env, bound)
 				} yield exp :: rest
 			}
 		}
@@ -167,114 +167,120 @@ object Generator {
 	
 	type GenTypeEnv = Map[Variable, Term[UnificationType]]	//alias so i don't have to keep typing this
 	
-	def genExp(env: GenTypeEnv, ofType: Term[UnificationType]): UIterator[Int, Exp] = {
-		disjuncts(
-			for {	//integer literal
-				_ <- unify(ofType, intUnificationType)
-			} yield IntegerLiteralExp(0),	//how do i make this not just 0?
-			for {	//boolean literal
-				_ <- unify(ofType, boolUnificationType)
-			} yield BooleanLiteralExp(true), 	//how do i make this not just true?
-			for {	//string literal
-				_ <- unify(ofType, stringUnificationType)
-			} yield StringLiteralExp("hi"),		//how do i make this not just "hi"?
-			for {	//variable
-				(variable, variableType) <- toUIterator(env.iterator)
-				_ <- unify(ofType, variableType)
-			} yield VariableExp(variable),
-			{	//UnaryExps
-				val expType = NewVariable[UnificationType]
+	def genExp(env: GenTypeEnv, ofType: Term[UnificationType], bound: Int): UIterator[Int, Exp] = {
+		if (bound == 0) {
+			empty
+		} else {
+			disjuncts(
+				for {	//integer literal
+					_ <- unify(ofType, intUnificationType)
+				} yield IntegerLiteralExp(0),	//how do i make this not just 0?
+				for {	//boolean literal
+					_ <- unify(ofType, boolUnificationType)
+				} yield BooleanLiteralExp(true), 	//how do i make this not just true?
+				for {	//string literal
+					_ <- unify(ofType, stringUnificationType)
+				} yield StringLiteralExp("hi"),		//how do i make this not just "hi"?
+				for {	//variable
+					(variable, variableType) <- toUIterator(env.iterator)
+					_ <- unify(ofType, variableType)
+				} yield VariableExp(variable),
+				{	//UnaryExps
+					val expType = NewVariable[UnificationType]
+					for {
+						op <- unopHelper(expType, ofType)
+						theExp <- genExp(env, expType, bound - 1)
+					} yield UnaryExp(op, theExp)
+				},
+				{	//BinopExps
+					val leftType = NewVariable[UnificationType]
+					val rightType = NewVariable[UnificationType]
+					for {
+						op <- binopHelper(leftType, rightType,  ofType)
+						left <- genExp(env, leftType, bound - 1)
+						right <- genExp(env, rightType, bound - 1)
+					} yield BinopExp(left, op, right)
+				} ,
 				for {
-					op <- unopHelper(expType, ofType)
-					theExp <- genExp(env, expType)
-				} yield UnaryExp(op, theExp)
-			},
-			{	//BinopExps
-				val leftType = NewVariable[UnificationType]
-				val rightType = NewVariable[UnificationType]
-				for {
-					op <- binopHelper(leftType, rightType,  ofType)
-					left <- genExp(env, leftType)
-					right <- genExp(env, rightType)
-				} yield BinopExp(left, op, right)
-			} ,
-			for {
-				FunctionDef(returnType, name, params) <- toUIterator(functions.iterator)
-				_ <- unify(returnType, ofType)	
-				exps <- functionParamHelper(params.map(_._1).toList, env)
-			} yield FunctionCall(name, exps)
-		)	//end of disjuncts
+					FunctionDef(returnType, name, params) <- toUIterator(functions.iterator)
+					_ <- unify(returnType, ofType)	
+					exps <- functionParamHelper(params.map(_._1).toList, env, bound)
+				} yield FunctionCall(name, exps)
+			)	//end of disjuncts
+		}
 	} //end of genExp
 	
 	//helper for generating block statement
-	def genNumStmtsInBlock(amount: Int, env: GenTypeEnv): UIterator[Int, (List[GenStmt], GenTypeEnv)] = {
+	def genNumStmtsInBlock(amount: Int, env: GenTypeEnv, bound: Int): UIterator[Int, (List[GenStmt], GenTypeEnv)] = {
 		if (amount == 0) {
 			singleton((List(), env))
 		} else {
 			for {
-				(stmt, newEnv) <- genStmt(env)
-				(stmts, finalEnv) <- genNumStmtsInBlock(amount - 1, newEnv)
+				(stmt, newEnv) <- genStmt(env, bound - 1)
+				(stmts, finalEnv) <- genNumStmtsInBlock(amount - 1, newEnv, bound)
 			} yield (stmt :: stmts, finalEnv)
 		}
 	}
 	
 	//helper for generating print stmt
-	def genNumExpsInPrint(amount: Int, env: GenTypeEnv): UIterator[Int, List[Exp]] = {
+	def genNumExpsInPrint(amount: Int, env: GenTypeEnv, bound: Int): UIterator[Int, List[Exp]] = {
 		if (amount == 0) {
 			singleton(List())
 		} else {
 			val expType = NewVariable[UnificationType]
 			for {
-				exp <- genExp(env, expType)
-				exps <- genNumExpsInPrint(amount - 1, env)
+				exp <- genExp(env, expType, bound -  1)
+				exps <- genNumExpsInPrint(amount - 1, env, bound)
 			} yield (exp :: exps)
 		}
 	}
 	
-	def genStmt(env: GenTypeEnv): UIterator[Int, (GenStmt, GenTypeEnv)] = {
-		disjuncts(
-			{	//Variable Declaration: type x = exp;
-				val expType = NewVariable[UnificationType]
+	def genStmt(env: GenTypeEnv, bound: Int): UIterator[Int, (GenStmt, GenTypeEnv)] = {
+		if (bound == 0) {
+			empty
+		} else {
+			disjuncts(
+				{	//Variable Declaration: type x = exp;
+					val expType = NewVariable[UnificationType]
+					for {
+						exp <- genExp(env, expType, bound - 1)
+						id <- getState
+						_ <- putState(id + 1)
+					} yield {
+						val newVariable = Variable("x" + id)
+						(VariableDeclarationGenStmt(expType, newVariable, exp), env + (newVariable -> expType))
+					}
+				},
+				//Variable Assignment
 				for {
-					exp <- genExp(env, expType)
-					id <- getState
-					_ <- putState(id + 1)
-				} yield {
-					val newVariable = Variable("x" + id)
-					//??? below is because of the whole not a Type but a Term[UnificationType] thing
-					//to be fixed later
-					//(VariableDeclarationStmt(???, newVariable, exp), env + (newVariable -> expType))
-					(VariableDeclarationGenStmt(expType, newVariable, exp), env + (newVariable -> expType))
-				}
-			},
-			//Variable Assignment
-			for {
-				(variable, variableType) <- toUIterator(env.iterator)
-				exp <- genExp(env, variableType)
-			} yield (VariableAssignmentGenStmt(variable, exp), env),
-			//If statement: if (exp) stmt else stmt
-			for {
-				guard <- genExp(env, boolUnificationType)
-				(ifTrue, _) <- genStmt(env)
-				(ifFalse, _) <- genStmt(env)
-			} yield (IfGenStmt(guard, ifTrue, ifFalse), env),
-			//While statement: while (exp) stmt
-			for {
-				guard <- genExp(env, boolUnificationType)
-				(body, _) <- genStmt(env)
-			} yield (WhileGenStmt(guard, body), env),
-			for {	//print(exp*)
-				numExps <- toUIterator(0.to(5).iterator)
-				exps <- genNumExpsInPrint(numExps, env)
-			} yield (PrintGenStmt(exps.toSeq), env),
-			for {	//Block statement: { stmt* }
-				numStmts <- toUIterator(0.to(5).iterator)
-				(stmts, _) <- genNumStmtsInBlock(numStmts, env)
-			} yield (BlockGenStmt(stmts.toSeq), env)
-		) //end of disjuncts
+					(variable, variableType) <- toUIterator(env.iterator)
+					exp <- genExp(env, variableType, bound - 1)
+				} yield (VariableAssignmentGenStmt(variable, exp), env),
+				//If statement: if (exp) stmt else stmt
+				for {
+					guard <- genExp(env, boolUnificationType, bound - 1)
+					(ifTrue, _) <- genStmt(env, bound - 1)
+					(ifFalse, _) <- genStmt(env, bound - 1)
+				} yield (IfGenStmt(guard, ifTrue, ifFalse), env),
+				//While statement: while (exp) stmt
+				for {
+					guard <- genExp(env, boolUnificationType, bound - 1)
+					(body, _) <- genStmt(env, bound - 1)
+				} yield (WhileGenStmt(guard, body), env),
+				for {	//print(exp*)
+					numExps <- toUIterator(0.to(2).iterator)
+					exps <- genNumExpsInPrint(numExps, env, bound)
+				} yield (PrintGenStmt(exps.toSeq), env),
+				for {	//Block statement: { stmt* }
+					numStmts <- toUIterator(0.to(2).iterator)
+					(stmts, _) <- genNumStmtsInBlock(numStmts, env, bound)
+				} yield (BlockGenStmt(stmts.toSeq), env)
+			) //end of disjuncts
+		}
 	}
 	
 	def main(args: Array[String]) {
-		genStmt(Map()).reify(new UnificationEnvironment, 1).foreach(x => println(x))
+		//genStmt(Map(), 2).reify(new UnificationEnvironment, 1).foreach(x => println(x)) //from KD
+		genStmt(Map(), 3).reify(new UnificationEnvironment, 1).map(_._3).map(_._1).foreach(x => println(x))
 	}
 } //end of Generator
