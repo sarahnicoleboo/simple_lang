@@ -6,10 +6,10 @@ str is a string literal </br >
 Abstract Syntax:
 
 ```
-type ::= int | bool | string</br >
+type ::= int | bool | string | ???(type*) => type</br >
 unop ::= ! | - </br >
 binop ::=  + | - | < | > | == | != </br >
-exp ::= x | i | bool | str | unop exp | exp binop exp | x(exp*) </br >
+exp ::= x | i | bool | str | unop exp | exp binop exp | x(exp*) | ((type x)*) => exp | exp(exp) </br >
 stmt ::= type x = exp; | </br >
 	 x = exp; | </br >
 	 if (exp) stmt else stmt | </br >
@@ -19,6 +19,9 @@ stmt ::= type x = exp; | </br >
 program ::= stmt
 
 ```
+
+for me to reference: </br>
+functionDef ::= type x((type, x)*) </br>
 
 Below is the more concrete-ish syntax pulled from my 430 lang with some changes
 

@@ -67,4 +67,3 @@ case class BlockGenStmt(smts: Seq[GenStmt]) extends GenStmt
 case class FunctionDef(theType: Term[UnificationType], name: Variable, params: Seq[(Term[UnificationType], Variable)])
 
 
-

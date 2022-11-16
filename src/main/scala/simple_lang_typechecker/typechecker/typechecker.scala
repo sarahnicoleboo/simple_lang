@@ -201,11 +201,14 @@ object Generator {
 						right <- genExp(env, rightType, bound - 1)
 					} yield BinopExp(left, op, right)
 				} ,
-				for {
+				for {	//NamedFunctionCalls
 					FunctionDef(returnType, name, params) <- toUIterator(functions.iterator)
 					_ <- unify(returnType, ofType)	
 					exps <- functionParamHelper(params.map(_._1).toList, env, bound)
-				} yield FunctionCall(name, exps)
+				} yield FunctionCall(name, exps)/* ,
+				for {	//HOF calls
+					
+				} yield ??? */
 			)	//end of disjuncts
 		}
 	} //end of genExp
@@ -279,8 +282,22 @@ object Generator {
 		}
 	}
 	
+	def tryThis(env: GenTypeEnv, bound: Int) : UIterator[Int, (GenStmt, GenTypeEnv)] = {
+		val expType = NewVariable[UnificationType]
+		for {
+			exp <- genExp(Map(), expType, bound - 1)
+			id <- getState
+			_ <- putState(id + 1)
+		} yield {
+			val newVariable = Variable("x" + id)
+			(VariableDeclarationGenStmt(expType, newVariable, exp), env + (newVariable -> expType))
+		}
+	}
+	
 	def main(args: Array[String]) {
-		//genStmt(Map(), 2).reify(new UnificationEnvironment, 1).foreach(x => println(x)) //from KD
-		genStmt(Map(), 3).reify(new UnificationEnvironment, 1).map(_._3).map(_._1).foreach(x => println(x))
+		genStmt(Map(), 2).reify(new UnificationEnvironment, 1).foreach(x => println(x)) //from KD 			//all three thing
+		//genStmt(Map(), 2).reify(new UnificationEnvironment, 1).map(_._3).foreach(x => println(x))				// second and third
+		//genStmt(Map(), 2).reify(new UnificationEnvironment, 1).map(_._3).map(_._1).foreach(x => println(x))	//just the AST
+		//tryThis(Map(), 2).reify(new UnificationEnvironment, 1).foreach(x => println(x))	//ugh
 	}
 } //end of Generator
