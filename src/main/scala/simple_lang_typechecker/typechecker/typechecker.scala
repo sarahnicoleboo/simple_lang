@@ -295,9 +295,9 @@ object Generator {
 	}
 	
 	def main(args: Array[String]) {
-		genStmt(Map(), 2).reify(new UnificationEnvironment, 1).foreach(x => println(x)) //from KD 			//all three thing
+		//genStmt(Map(), 2).reify(new UnificationEnvironment, 1).foreach(x => println(x)) //from KD 			//all three thing
 		//genStmt(Map(), 2).reify(new UnificationEnvironment, 1).map(_._3).foreach(x => println(x))				// second and third
-		//genStmt(Map(), 2).reify(new UnificationEnvironment, 1).map(_._3).map(_._1).foreach(x => println(x))	//just the AST
+		genStmt(Map(), 2).reify(new UnificationEnvironment, 1).map(_._3).map(_._1).foreach(x => println(x))	//just the AST
 		//tryThis(Map(), 2).reify(new UnificationEnvironment, 1).foreach(x => println(x))	//ugh
 	}
 } //end of Generator
