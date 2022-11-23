@@ -8,6 +8,7 @@ sealed trait Type
 case object IntType extends Type
 case object BoolType extends Type
 case object StringType extends Type
+case class FunctionType(paramType: Type, returnType: Type) extends Type
 
 //operators
 sealed trait BinOp
@@ -36,8 +37,12 @@ case class StringLiteralExp(value: String) extends Exp
 case class BinopExp(left: Exp, op: BinOp, right: Exp) extends Exp
 //unary exps
 case class UnaryExp(op: UnaryOp, exp: Exp) extends Exp
-//for generation only: 
+//for generation only(named functions): 
 case class FunctionCall(name:Variable, params: Seq[Exp]) extends Exp
+//HOF
+case class CallExp(function: Exp, param: Exp) extends Exp
+//case class FunctionExp(param: Seq[Variable], /*paramType: Type,*/ body: Exp)
+case class FunctionExp(param: Variable, /*paramType: Type,*/ body: Exp) extends Exp
 //end of exps
 
 //stmts

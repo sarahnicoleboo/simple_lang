@@ -98,6 +98,19 @@ object Generator {
 	val intUnificationType = VariantOf[UnificationType]("intType")
 	val boolUnificationType = VariantOf[UnificationType]("boolType")
 	val stringUnificationType = VariantOf[UnificationType]("stringType")
+	def functionType(param: Term[UnificationType], returnType: Term[UnificationType]) =
+		VariantOf[UnificationType]("functionType", param, returnType)
+		
+	def makeString(size: Int): String = {
+		size match {
+			case 0 => ""
+			case _ => util.Random.nextPrintableChar.toString ++ makeString(size-1).toString
+		}
+	}
+	
+	def makeUIString(size: Int) : UIterator[Int, String] = {
+		singleton(makeString(size))
+	}
 	
 	//helper for generating expressions with unary operators
 	//each tuple: Op, expType, resultType
@@ -174,13 +187,18 @@ object Generator {
 			disjuncts(
 				for {	//integer literal
 					_ <- unify(ofType, intUnificationType)
-				} yield IntegerLiteralExp(0),	//how do i make this not just 0?
+					num <- toUIterator(0.to(2).toIterator)
+				} yield IntegerLiteralExp(num),
 				for {	//boolean literal
 					_ <- unify(ofType, boolUnificationType)
-				} yield BooleanLiteralExp(true), 	//how do i make this not just true?
+					values = Seq(true, false)
+					value <- toUIterator(values.toIterator)
+				} yield BooleanLiteralExp(value),
 				for {	//string literal
 					_ <- unify(ofType, stringUnificationType)
-				} yield StringLiteralExp("hi"),		//how do i make this not just "hi"?
+					size <- toUIterator(0.to(5).toIterator)
+					resultString <- makeUIString(size)
+				} yield StringLiteralExp(resultString),
 				for {	//variable
 					(variable, variableType) <- toUIterator(env.iterator)
 					_ <- unify(ofType, variableType)
@@ -200,15 +218,30 @@ object Generator {
 						left <- genExp(env, leftType, bound - 1)
 						right <- genExp(env, rightType, bound - 1)
 					} yield BinopExp(left, op, right)
-				} ,
+				},
 				for {	//NamedFunctionCalls
 					FunctionDef(returnType, name, params) <- toUIterator(functions.iterator)
 					_ <- unify(returnType, ofType)	
 					exps <- functionParamHelper(params.map(_._1).toList, env, bound)
-				} yield FunctionCall(name, exps)/* ,
-				for {	//HOF calls
-					
-				} yield ??? */
+				} yield FunctionCall(name, exps),
+				{	//HOF calls
+					val paramType = NewVariable[UnificationType]
+					for {
+						outerExp <- genExp(env, functionType(paramType, ofType), bound - 1)
+						innerExp <- genExp(env, paramType, bound - 1)
+					} yield CallExp(outerExp, innerExp)
+				},
+				{	//HOF introduction
+					val paramType = NewVariable[UnificationType]
+					val returnType = NewVariable[UnificationType]
+					for {
+						_ <- unify(ofType, functionType(paramType, returnType))
+						id <- getState
+						_ <- putState(id + 1)
+						variable = Variable("x" + id)
+						exp <- genExp(env + (variable -> paramType), ofType, bound - 1)
+					} yield FunctionExp(variable, exp)
+				}
 			)	//end of disjuncts
 		}
 	} //end of genExp
@@ -282,22 +315,74 @@ object Generator {
 		}
 	}
 	
-	def tryThis(env: GenTypeEnv, bound: Int) : UIterator[Int, (GenStmt, GenTypeEnv)] = {
-		val expType = NewVariable[UnificationType]
+/* 	def cookType(rawType: Term[UnificationType]): UIterator[Int, Type] = {
 		for {
-			exp <- genExp(Map(), expType, bound - 1)
-			id <- getState
-			_ <- putState(id + 1)
-		} yield {
-			val newVariable = Variable("x" + id)
-			(VariableDeclarationGenStmt(expType, newVariable, exp), env + (newVariable -> expType))
+			env <- get ??? no method
+			lookedup <- env.fullLookup(rawType)
+			cookedType <- lookedup match {
+				case StructureTerm("intType", Seq()) => singleton(IntType)	//bcuz this needs to be Uiterator?
+				case StructureTerm("boolType", Seq()) => singleton(BoolType)
+				case StructureTerm("stringType", Seq()) => singleton(StringType)
+				//case for FunctionType
+			}
+		} yield cookedType
+	}
+	
+	def ensureStmtsInBlockCooked(stmts: List[GenStmt]): UIterator[Int, List[Stmt]] = {
+		stmts match {
+			case Nil => singleton(List())
+			case head :: tail => {
+				for {
+					stmt <- cookStmt(head)
+					rest <- ensureStmtsInBlockCooked(tail)
+				} yield stmt :: rest
+			}
 		}
 	}
 	
+	def cookStmt(stmt: GenStmt): UIterator[Int, Stmt] = {
+		stmt match {
+			case VariableDeclarationGenStmt(theType, name, exp) => {
+				for {
+					cookedType <- cookType(theType)
+				} yield VariableAssignmentStmt(cookedType, name, exp)
+			}
+			case VariableAssignmentGenStmt(name, exp) => {
+				singleton(VariableAssignmentStmt(name, exp)
+			}
+			case IfGenStmt(guard, ifTrue, ifFalse) => {
+				for {
+					cookedIfTrue <- cookStmt(ifTrue)
+					cookedIfFalse <- cookStmt(ifFalse)
+				} yield IfStmt(guard, cookedIfTrue, cookedIfFalse)
+			}
+			case WhileGenStmt(guard, body) => {
+				for {
+					cookedBody <- cookStmt(body)
+				} yield WhileStmt(guard, cookedBody)
+			}
+			case PrintGenStmt(exps) => {
+				singleton(PrintStmt(exps))
+			}
+			case BlockGenStmt(stmts) => {
+				for {
+					cookedStmts <- ensureStmtsInBlockCooked(stmts.toList)
+				} yield BlockStmt(cookedStmts.toSeq)
+			}
+		}
+	}
+	
+	def cookStmts(stmts: Seq[GenStmt]): UIterator[Int, Seq[Stmt]] = {
+		UIterator.map(stmts)(cookStmt)
+	} */
+	
 	def main(args: Array[String]) {
-		//genStmt(Map(), 2).reify(new UnificationEnvironment, 1).foreach(x => println(x)) //from KD 			//all three thing
+		genStmt(Map(), 2).reify(new UnificationEnvironment, 1).foreach(x => println(x)) //from KD 			//all three thing
 		//genStmt(Map(), 2).reify(new UnificationEnvironment, 1).map(_._3).foreach(x => println(x))				// second and third
-		genStmt(Map(), 2).reify(new UnificationEnvironment, 1).map(_._3).map(_._1).foreach(x => println(x))	//just the AST
-		//tryThis(Map(), 2).reify(new UnificationEnvironment, 1).foreach(x => println(x))	//ugh
+		//genStmt(Map(), 3).reify(new UnificationEnvironment, 1).map(_._3).map(_._1).foreach(x => println(x))	//just the AST
+		//genExp(Map(), NewVariable[UnificationType], 3).reify(new UnificationEnvironment, 1).map(_._3).foreach(x=>println(x))
+		
+/* 		val result: Seq[GenStmt] = genStmt(Map(), 2).reify(new UnificationEnvironment, 1).map(_._3).map(_._1).toSeq
+		cookStmts(result).foreach(x => println(x)) */
 	}
 } //end of Generator
