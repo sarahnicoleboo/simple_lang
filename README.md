@@ -6,10 +6,10 @@ str is a string literal </br >
 Abstract Syntax:
 
 ```
-type ::= int | bool | string | ???(type*) => type</br >
+type ::= int | bool | string | type => type</br >
 unop ::= ! | - </br >
 binop ::=  + | - | < | > | == | != </br >
-exp ::= x | i | bool | str | unop exp | exp binop exp | x(exp*) | ((type x)*) => exp | exp(exp) </br >
+exp ::= x | i | bool | str | unop exp | exp binop exp | x(exp*) | exp(exp) | (x*) => exp </br >
 stmt ::= type x = exp; | </br >
 	 x = exp; | </br >
 	 if (exp) stmt else stmt | </br >
