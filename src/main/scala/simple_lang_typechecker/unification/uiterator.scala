@@ -66,6 +66,30 @@ object UIterator {
       }
     }
   } // toUIterator
+  
+  def getUnificationEnvironment[S]: UIterator[S, UnificationEnvironment] = {
+	new UIterator[S, UnificationEnvironment] {
+		def reify(env: UnificationEnvironment, state: S): Iterator[(UnificationEnvironment, S, UnificationEnvironment)] = {
+			Iterator((env, state, env))
+      }
+    }
+  } // getUnificationEnvironment
+  
+    def uimap[S, A, B](items: Seq[A])(f: A => UIterator[S, B]): UIterator[S, Seq[B]] = {
+    // Scala had a very hard time inferring this in a more concise way
+    def foldFunction(a: A, accum: UIterator[S, List[B]]): UIterator[S, List[B]] = {
+      for {
+        head <- f(a)
+        tail <- accum
+      } yield head :: tail
+    } // foldFunction
+
+    val initial: UIterator[S, List[B]] =
+      singleton(List[B]())
+    val foldResult: UIterator[S, List[B]] =
+      items.reverse.foldRight(initial)(foldFunction _)
+    foldResult.map(_.reverse.toSeq)
+  } // uimap
 } // UIterator
 
 // S: State

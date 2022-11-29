@@ -239,7 +239,7 @@ object Generator {
 						id <- getState
 						_ <- putState(id + 1)
 						variable = Variable("x" + id)
-						exp <- genExp(env + (variable -> paramType), ofType, bound - 1)
+						exp <- genExp(env + (variable -> paramType), returnType, bound - 1)
 					} yield FunctionExp(variable, exp)
 				}
 			)	//end of disjuncts
@@ -315,15 +315,20 @@ object Generator {
 		}
 	}
 	
-/* 	def cookType(rawType: Term[UnificationType]): UIterator[Int, Type] = {
+	def cookType(rawType: Term[UnificationType]): UIterator[Int, Type] = {
 		for {
-			env <- get ??? no method
-			lookedup <- env.fullLookup(rawType)
+			env <- getUnificationEnvironment[Int]
+			lookedup = env.fullLookup(rawType)
 			cookedType <- lookedup match {
-				case StructureTerm("intType", Seq()) => singleton(IntType)	//bcuz this needs to be Uiterator?
-				case StructureTerm("boolType", Seq()) => singleton(BoolType)
-				case StructureTerm("stringType", Seq()) => singleton(StringType)
-				//case for FunctionType
+				case StructureTerm("intType", Seq()) => singleton[Int, Type](IntType)	//bcuz this needs to be Uiterator?
+				case StructureTerm("boolType", Seq()) => singleton[Int, Type](BoolType)
+				case StructureTerm("stringType", Seq()) => singleton[Int, Type](StringType)
+				case StructureTerm("functionType", Seq(a: Term[UnificationType], b: Term[UnificationType])) => 
+					for {
+						cookeda <- cookType(a)
+						cookedb <- cookType(b)
+					} yield FunctionType(cookeda, cookedb)
+				case PlaceholderTerm(_) => singleton[Int, Type](IntType)
 			}
 		} yield cookedType
 	}
@@ -345,10 +350,10 @@ object Generator {
 			case VariableDeclarationGenStmt(theType, name, exp) => {
 				for {
 					cookedType <- cookType(theType)
-				} yield VariableAssignmentStmt(cookedType, name, exp)
+				} yield VariableDeclarationStmt(cookedType, name, exp)
 			}
 			case VariableAssignmentGenStmt(name, exp) => {
-				singleton(VariableAssignmentStmt(name, exp)
+				singleton(VariableAssignmentStmt(name, exp))
 			}
 			case IfGenStmt(guard, ifTrue, ifFalse) => {
 				for {
@@ -373,16 +378,19 @@ object Generator {
 	}
 	
 	def cookStmts(stmts: Seq[GenStmt]): UIterator[Int, Seq[Stmt]] = {
-		UIterator.map(stmts)(cookStmt)
-	} */
+		UIterator.uimap(stmts)(cookStmt)
+	}
 	
 	def main(args: Array[String]) {
-		genStmt(Map(), 2).reify(new UnificationEnvironment, 1).foreach(x => println(x)) //from KD 			//all three thing
+		//genStmt(Map(), 2).reify(new UnificationEnvironment, 1).foreach(x => println(x)) //from KD 			//all three thing
 		//genStmt(Map(), 2).reify(new UnificationEnvironment, 1).map(_._3).foreach(x => println(x))				// second and third
 		//genStmt(Map(), 3).reify(new UnificationEnvironment, 1).map(_._3).map(_._1).foreach(x => println(x))	//just the AST
 		//genExp(Map(), NewVariable[UnificationType], 3).reify(new UnificationEnvironment, 1).map(_._3).foreach(x=>println(x))
 		
-/* 		val result: Seq[GenStmt] = genStmt(Map(), 2).reify(new UnificationEnvironment, 1).map(_._3).map(_._1).toSeq
-		cookStmts(result).foreach(x => println(x)) */
+		val result0: UIterator[Int, (GenStmt, GenTypeEnv)] = genStmt(Map(), 3)
+		val result1: UIterator[Int, Stmt] = result0.flatMap((x: (GenStmt, GenTypeEnv)) => cookStmt(x._1))
+		//val result: Iterator[(UnificationEnvironment, Int, Stmt)] = genStmt(Map(), 2).map(x => cookStmt(x._1)).reify(new UnificationEnvironment, 1)
+		result1.reify(new UnificationEnvironment, 1).map(_._3).foreach(x => println(x))
+		//cookStmts(result).foreach(x => println(x))
 	}
 } //end of Generator
